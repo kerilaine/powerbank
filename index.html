@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Verse Encouragement Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2F4231 0%, #3a5236 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .bot-message {
+            background-color: white;
+            border: 2px solid #e0e0e0;
+            margin-right: auto;
+        }
+
+        .verse {
+            font-style: italic;
+            font-size: 1.1em;
+            color: #2F4231;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f5f7f5;
+            border-left: 4px solid #2F4231;
+            border-radius: 8px;
+        }
+
+        .reference {
+            font-weight: bold;
+            color: #2F4231;
+            margin-top: 10px;
+        }
+
+        .encouragement {
+            color: #333;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background-color: white;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #2F4231;
+        }
+
+        button {
+            background: linear-gradient(135deg, #2F4231 0%, #3a5236 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(47, 66, 49, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .welcome-message h3 {
+            color: #2F4231;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🙏 Bible Verse Encouragement Bot</h1>
+            <p>Share what's on your heart and find comfort in God's Word</p>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h3>Welcome!</h3>
+                <p>I'm here to help you find encouragement through Bible verses. Share what emotion you're feeling or what life issue you're struggling with, and I'll provide a relevant verse and uplifting message.</p>
+                <p><strong>Examples:</strong> "I'm feeling anxious", "dealing with loneliness", "need strength", "feeling discouraged"</p>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">Finding the perfect verse for you</div>
+
+        <div class="input-container">
+            <div class="input-group">
+                <input type="text" id="userInput" placeholder="Share what's on your heart..." maxlength="200">
+                <button onclick="sendMessage()" id="sendButton">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bible verses and encouragements organized by topics
+        const verseDatabase = {
+            anxiety: [
+                {
+                    verse: "Therefore do not worry about tomorrow, for tomorrow will worry about itself. Each day has enough trouble of its own.",
+                    reference: "Matthew 6:34",
+                    encouragement: "God knows your concerns and wants you to trust Him with your anxieties. Take life one day at a time, knowing that He is with you through every moment. You don't have to carry tomorrow's burdens today."
+                },
+                {
+                    verse: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
+                    reference: "Philippians 4:6-7",
+                    encouragement: "When anxiety overwhelms you, remember that prayer is your direct line to the Prince of Peace. God invites you to bring every worry to Him, and He promises to replace your anxiety with His supernatural peace."
+                }
+            ],
+            fear: [
+                {
+                    verse: "Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.",
+                    reference: "Joshua 1:9",
+                    encouragement: "Fear doesn't have to control your decisions. God's presence goes with you into every situation, giving you the strength and courage you need. You are not alone in facing whatever challenges lie ahead."
+                },
+                {
+                    verse: "So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.",
+                    reference: "Isaiah 41:10",
+                    encouragement: "In moments of fear, remember that the Creator of the universe is personally invested in your wellbeing. His strength is available to you, and His hand upholds you when you feel like falling."
+                }
+            ],
+            sadness: [
+                {
+                    verse: "He heals the brokenhearted and binds up their wounds.",
+                    reference: "Psalm 147:3",
+                    encouragement: "Your sadness is seen and acknowledged by God. He specializes in healing broken hearts and mending wounded souls. Allow Him to bring comfort and restoration to the painful places in your life."
+                },
+                {
+                    verse: "Weeping may stay for the night, but rejoicing comes in the morning.",
+                    reference: "Psalm 30:5",
+                    encouragement: "Your current sadness is not permanent. Just as night gives way to dawn, your season of sorrow will give way to joy. Hold on - morning is coming, and with it, renewed hope and gladness."
+                }
+            ],
+            loneliness: [
+                {
+                    verse: "The Lord your God is with you, the Mighty Warrior who saves. He will take great delight in you; in his love he will no longer rebuke you, but will rejoice over you with singing.",
+                    reference: "Zephaniah 3:17",
+                    encouragement: "Even in your loneliest moments, you are cherished and celebrated by God. He doesn't just tolerate you - He delights in you and sings over you with joy. You are never truly alone."
+                },
+                {
+                    verse: "And surely I am with you always, to the very end of the age.",
+                    reference: "Matthew 28:20",
+                    encouragement: "Jesus promises to be your constant companion. When others seem distant or absent, His presence remains steady and sure. You have a friend who will never leave or forsake you."
+                }
+            ],
+            strength: [
+                {
+                    verse: "I can do all this through him who gives me strength.",
+                    reference: "Philippians 4:13",
+                    encouragement: "Your ability isn't limited by your own strength alone. Through Christ, you have access to divine power that enables you to overcome obstacles and accomplish what seems impossible. Draw on His strength today."
+                },
+                {
+                    verse: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.",
+                    reference: "Isaiah 40:31",
+                    encouragement: "When you feel depleted and weak, place your hope in the Lord. He promises to renew your strength - not just to get by, but to soar above your circumstances with grace and endurance."
+                }
+            ],
+            doubt: [
+                {
+                    verse: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+                    reference: "Proverbs 3:5-6",
+                    encouragement: "It's natural to have questions and doubts. God doesn't ask you to understand everything, but to trust His wisdom and guidance. He sees the full picture when you can only see fragments."
+                },
+                {
+                    verse: "Now faith is confidence in what we hope for and assurance about what we do not see.",
+                    reference: "Hebrews 11:1",
+                    encouragement: "Doubt doesn't disqualify you from faith. Even in uncertainty, you can have confidence in God's character and promises. Faith isn't the absence of questions, but trust despite them."
+                }
+            ],
+            anger: [
+                {
+                    verse: "In your anger do not sin: Do not let the sun go down while you are still angry.",
+                    reference: "Ephesians 4:26",
+                    encouragement: "Anger itself isn't sin, but what we do with it can be. God understands your frustration and provides a way to process it healthily. Don't let anger take root in your heart - release it to God."
+                },
+                {
+                    verse: "The Lord is compassionate and gracious, slow to anger, abounding in love.",
+                    reference: "Psalm 103:8",
+                    encouragement: "God's patience with us is an example of how to handle our own anger. He shows us grace even when we mess up, and He can help you respond with wisdom rather than react in anger."
+                }
+            ],
+            hope: [
+                {
+                    verse: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, to give you hope and a future.",
+                    reference: "Jeremiah 29:11",
+                    encouragement: "Even when your future seems uncertain, God has good plans for your life. His intentions toward you are always loving and hopeful. Trust that He is working all things together for your ultimate good."
+                },
+                {
+                    verse: "May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.",
+                    reference: "Romans 15:13",
+                    encouragement: "Hope isn't just positive thinking - it's a supernatural gift from God. As you trust Him, He fills you with joy and peace that overflows into genuine hope for your future."
+                }
+            ],
+            grief: [
+                {
+                    verse: "Blessed are those who mourn, for they will be comforted.",
+                    reference: "Matthew 5:4",
+                    encouragement: "In your grief, you are held in God's tender embrace. He doesn't rush your healing or minimize your pain. Instead, He promises His divine comfort to those who mourn, walking with you through every season of your loss."
+                },
+                {
+                    verse: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.",
+                    reference: "Psalm 34:18",
+                    encouragement: "When grief feels overwhelming, know that God draws especially near to broken hearts. He understands your pain and is actively working to save and restore your crushed spirit. You are not alone in your sorrow."
+                },
+                {
+                    verse: "Even though I walk through the darkest valley, I will fear no evil, for you are with me; your rod and your staff, they comfort me.",
+                    reference: "Psalm 23:4",
+                    encouragement: "Death may have touched your life, but it cannot separate you from God's presence. He walks with you through this valley of shadows, providing comfort and protection. His love transcends even death itself."
+                },
+                {
+                    verse: "And I heard a loud voice from the throne saying, 'Look! God's dwelling place is now among the people, and he will dwell with them. They will be his people, and God himself will be with them and be their God. He will wipe every tear from their eyes. There will be no more death or mourning or crying or pain, for the old order of things has passed away.'",
+                    reference: "Revelation 21:3-4",
+                    encouragement: "Your grief over the loss of your loved one is real and valid. But there is hope beyond this life - a place where families are reunited, where tears are wiped away, and where death has no power. Hold onto this eternal hope as you navigate your current pain."
+                }
+            ],
+            unemployment: [
+                {
+                    verse: "And my God will meet all your needs according to the riches of his glory in Christ Jesus.",
+                    reference: "Philippians 4:19",
+                    encouragement: "Unemployment brings uncertainty about provision, but God sees your needs before you even voice them. He has unlimited resources and creative ways to provide for you. Trust in His timing and His ability to care for you completely."
+                },
+                {
+                    verse: "In their hearts humans plan their course, but the Lord establishes their steps.",
+                    reference: "Proverbs 16:9",
+                    encouragement: "You may have had career plans that didn't work out, but God is directing your steps toward His purposes. This season of unemployment could be preparing you for something better than you imagined. Stay open to His leading."
+                },
+                {
+                    verse: "Consider it pure joy, my brothers and sisters, whenever you face trials of many kinds, because you know that the testing of your faith produces perseverance. Let perseverance finish its work so that you may be mature and complete, not lacking anything.",
+                    reference: "James 1:2-4",
+                    encouragement: "Job loss is painful, but it can also be a time of growth and discovery. God can use this challenging season to develop character, reveal new opportunities, and deepen your faith. Trust that He is working in ways you cannot yet see."
+                },
+                {
+                    verse: "The Lord your God is with you wherever you go.",
+                    reference: "Joshua 1:9",
+                    encouragement: "Whether you're searching for work, attending interviews, or feeling discouraged, remember that God goes with you into every situation. His presence gives you confidence and His favor can open doors that seem impossible."
+                }
+            ],
+            divorce: [
+                {
+                    verse: "The Lord is close to the brokenhearted and saves those who are crushed in spirit.",
+                    reference: "Psalm 34:18",
+                    encouragement: "The end of a marriage brings deep heartbreak, but you are not alone in your pain. God draws especially close during this difficult time, offering healing for your broken heart and strength for the difficult days ahead."
+                },
+                {
+                    verse: "But he said to me, 'My grace is sufficient for you, for my power is made perfect in weakness.' Therefore I will boast all the more gladly about my weaknesses, so that Christ's power may rest on me.",
+                    reference: "2 Corinthians 12:9",
+                    encouragement: "In your weakness and vulnerability after divorce, God's grace becomes even more evident. His strength carries you when you feel you can't go on. Allow His power to work through your weakness and bring healing to your life."
+                },
+                {
+                    verse: "See, I am doing a new thing! Now it springs up; do you not perceive it? I am making a way in the wilderness and streams in the wasteland.",
+                    reference: "Isaiah 43:19",
+                    encouragement: "Though your marriage has ended, God is creating something new in your life. What feels like a wilderness now can become a place where God makes streams of hope and possibility. Trust Him to bring beauty from ashes."
+                },
+                {
+                    verse: "Being confident of this, that he who began a good work in you will carry it on to completion until the day of Christ Jesus.",
+                    reference: "Philippians 1:6",
+                    encouragement: "Divorce doesn't define your worth or your future. God has good work to do in and through your life. He will complete what He started in you, using even this painful experience to shape you into who He's called you to be."
+                }
+            ],
+            discouraged: [
+                {
+                    verse: "Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.",
+                    reference: "Galatians 6:9",
+                    encouragement: "Discouragement whispers that nothing will change, but God sees the harvest coming from your faithful efforts. Don't let temporary setbacks convince you to give up. Your perseverance is preparing you for breakthrough."
+                },
+                {
+                    verse: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.",
+                    reference: "Isaiah 40:31",
+                    encouragement: "When discouragement weighs you down, remember that your hope is not in circumstances but in the Lord. He promises to renew your strength and lift you above your current struggles. Trust Him to carry you forward."
+                },
+                {
+                    verse: "The Lord your God is with you, the Mighty Warrior who saves. He will take great delight in you; in his love he will no longer rebuke you, but will rejoice over you with singing.",
+                    reference: "Zephaniah 3:17",
+                    encouragement: "Even when you feel discouraged about yourself, God delights in you! He doesn't see you as a failure - He sees you as His beloved child. Let His joy over you lift your spirits and renew your hope."
+                }
+            ],
+            laziness: [
+                {
+                    verse: "She watches over the affairs of her household and does not eat the bread of idleness.",
+                    reference: "Proverbs 31:27",
+                    encouragement: "If you're struggling with motivation, remember that God values diligence and purpose. Start small - even tiny steps forward honor God. He can transform your heart and give you renewed passion for meaningful work."
+                },
+                {
+                    verse: "All hard work brings a profit, but mere talk leads only to poverty.",
+                    reference: "Proverbs 14:23",
+                    encouragement: "God designed us for purposeful action, not endless procrastination. When motivation feels elusive, take one small step. God can use your willingness to act to rebuild momentum and purpose in your life."
+                },
+                {
+                    verse: "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.",
+                    reference: "Colossians 3:23",
+                    encouragement: "Transform your perspective on work and responsibility. When you see your efforts as service to God rather than obligation to others, it changes everything. He gives meaning and eternal value to even ordinary tasks."
+                }
+            ],
+            purposeless: [
+                {
+                    verse: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, to give you hope and a future.",
+                    reference: "Jeremiah 29:11",
+                    encouragement: "Feeling aimless doesn't mean you are without purpose. God has specific plans for your life that are good and hopeful. Sometimes the path isn't clear immediately, but trust that He is leading you toward your destiny."
+                },
+                {
+                    verse: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
+                    reference: "Romans 8:28",
+                    encouragement: "Your life has divine purpose, even when it feels random or meaningless. God can weave together all your experiences - both good and difficult - into something beautiful and significant. You are called according to His purpose."
+                },
+                {
+                    verse: "For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.",
+                    reference: "Ephesians 2:10",
+                    encouragement: "You are not an accident or afterthought. You are God's masterpiece, created with specific good works in mind that only you can accomplish. Your purpose may be unfolding gradually, but it is real and significant."
+                }
+            ],
+            insignificant: [
+                {
+                    verse: "Are not two sparrows sold for a penny? Yet not one of them will fall to the ground outside your Father's care. And even the very hairs of your head are all numbered. So don't be afraid; you are worth more than many sparrows.",
+                    reference: "Matthew 10:29-31",
+                    encouragement: "If God cares for the smallest sparrow, how much more does He care for you? You are infinitely valuable to Him. He knows every detail about you and considers you precious beyond measure."
+                },
+                {
+                    verse: "But you are a chosen people, a royal priesthood, a holy nation, God's special possession, that you may declare the praises of him who called you out of darkness into his wonderful light.",
+                    reference: "1 Peter 2:9",
+                    encouragement: "Far from insignificant, you are chosen by God! You belong to a royal priesthood and are His special possession. Your significance comes not from worldly achievements but from your identity in Christ."
+                },
+                {
+                    verse: "See what great love the Father has lavished on us, that we should be called children of God! And that is what we are!",
+                    reference: "1 John 3:1",
+                    encouragement: "The Creator of the universe calls you His child! Your significance is not determined by others' opinions or your circumstances, but by God's lavish love for you. You are a child of the Most High God."
+                }
+            ],
+            worthless: [
+                {
+                    verse: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+                    reference: "John 3:16",
+                    encouragement: "God demonstrated your worth by giving His most precious gift - His Son - for you. You cannot be worthless when the God of the universe considered you worth such an incredible sacrifice."
+                },
+                {
+                    verse: "Before I formed you in the womb I knew you, before you were born I set you apart; I appointed you as a prophet to the nations.",
+                    reference: "Jeremiah 1:5",
+                    encouragement: "God knew you before you were even born and set you apart for His purposes. Your worth was established by Him before you took your first breath. You are not an accident - you are His intentional creation."
+                },
+                {
+                    verse: "I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.",
+                    reference: "Psalm 139:14",
+                    encouragement: "You are fearfully and wonderfully made by God Himself. When you feel worthless, remember that you are God's wonderful work. He doesn't make mistakes - He made you exactly as you are for His purposes."
+                }
+            ],
+            embarrassed: [
+                {
+                    verse: "Those who look to him are radiant; their faces are never covered with shame.",
+                    reference: "Psalm 34:5",
+                    encouragement: "Embarrassment and shame try to keep you hiding, but God wants you to look to Him and find radiance instead. He removes the covering of shame and replaces it with His acceptance and love."
+                },
+                {
+                    verse: "Therefore, there is now no condemnation for those who are in Christ Jesus.",
+                    reference: "Romans 8:1",
+                    encouragement: "Whatever has caused your embarrassment, remember that God doesn't condemn you. His love and acceptance are not dependent on your perfect performance. In Christ, you are free from shame."
+                },
+                {
+                    verse: "Instead of your shame you will receive a double portion, and instead of disgrace you will rejoice in your inheritance.",
+                    reference: "Isaiah 61:7",
+                    encouragement: "God specializes in turning shame into honor and disgrace into celebration. What embarrasses you today can become tomorrow's testimony of God's grace and redemption in your life."
+                }
+            ],
+            confused: [
+                {
+                    verse: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+                    reference: "Proverbs 3:5-6",
+                    encouragement: "When confusion clouds your vision, trust in God's wisdom rather than trying to figure everything out yourself. Submit your confusion to Him, and He promises to make your path clear step by step."
+                },
+                {
+                    verse: "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you.",
+                    reference: "James 1:5",
+                    encouragement: "Confusion often signals a need for wisdom, and God is eager to provide it. Ask Him for clarity and understanding. He doesn't judge you for being confused - He generously gives wisdom to all who ask."
+                },
+                {
+                    verse: "For my thoughts are not your thoughts, neither are your ways my ways, declares the Lord.",
+                    reference: "Isaiah 55:8",
+                    encouragement: "Sometimes confusion comes when we try to understand God's ways with human logic. Remember that His thoughts and ways are higher than ours. Trust Him even when you can't understand the full picture."
+                }
+            ],
+            disheartened: [
+                {
+                    verse: "Come to me, all you who are weary and burdened, and I will give you rest.",
+                    reference: "Matthew 11:28",
+                    encouragement: "When life has left you disheartened and exhausted, Jesus invites you to come to Him for rest. He understands your weariness and offers genuine refreshment for your soul."
+                },
+                {
+                    verse: "He gives strength to the weary and increases the power of the weak.",
+                    reference: "Isaiah 40:29",
+                    encouragement: "Feeling disheartened is not a sign of weakness - it's human. God sees your weariness and promises to give you strength. His power is especially evident when you feel most powerless."
+                },
+                {
+                    verse: "Why, my soul, are you downcast? Why so disturbed within me? Put your hope in God, for I will yet praise him, my Savior and my God.",
+                    reference: "Psalm 42:11",
+                    encouragement: "Even when your heart feels heavy, you can choose to place your hope in God. This feeling is temporary, and there will be reasons to praise Him again. Hold onto hope - your story isn't over."
+                }
+            ]
+        };
+
+        // Keywords to match user input with topics
+        const keywords = {
+            anxiety: ['anxious', 'anxiety', 'worry', 'worried', 'nervous', 'stress', 'stressed', 'overwhelmed'],
+            fear: ['afraid', 'fear', 'scared', 'frightened', 'terrified', 'panic', 'dread'],
+            sadness: ['sad', 'sadness', 'depressed', 'depression', 'grief', 'mourning', 'heartbroken', 'sorrowful'],
+            loneliness: ['lonely', 'loneliness', 'alone', 'isolated', 'abandoned', 'forsaken'],
+            strength: ['strength', 'weak', 'weakness', 'tired', 'exhausted', 'weary', 'powerless'],
+            doubt: ['doubt', 'doubtful', 'uncertain', 'questioning', 'confused', 'unsure'],
+            anger: ['angry', 'anger', 'furious', 'mad', 'frustrated', 'irritated', 'rage'],
+            hope: ['hope', 'hopeful', 'hopeless', 'despair', 'future', 'tomorrow', 'purpose'],
+            grief: ['death', 'died', 'passed away', 'funeral', 'loss', 'lost someone', 'bereaved', 'mourning', 'grief', 'grieving'],
+            unemployment: ['unemployed', 'job loss', 'lost my job', 'fired', 'laid off', 'jobless', 'no work', 'unemployment', 'job search'],
+            divorce: ['divorce', 'divorced', 'separation', 'separated', 'marriage ended', 'split up', 'broken marriage', 'ex-wife', 'ex-husband'],
+            discouraged: ['discouraged', 'discouragement', 'defeated', 'deflated', 'demoralized', 'disheartened'],
+            laziness: ['lazy', 'laziness', 'unmotivated', 'procrastinating', 'idle', 'sluggish', 'apathetic'],
+            purposeless: ['aimless', 'purposeless', 'meaningless', 'directionless', 'lost', 'no direction', 'no purpose'],
+            insignificant: ['insignificant', 'unimportant', 'meaningless', 'small', 'invisible', 'nobody'],
+            worthless: ['worthless', 'useless', 'good for nothing', 'waste of space', 'failure', 'inadequate'],
+            embarrassed: ['embarrassed', 'embarrassment', 'ashamed', 'humiliated', 'mortified', 'shame'],
+            confused: ['confused', 'lost', 'bewildered', 'puzzled', 'unclear', 'mixed up', 'uncertain'],
+            disheartened: ['disheartened', 'downhearted', 'dejected', 'dispirited', 'discouraged', 'demoralized']
+        };
+
+        function findBestMatch(userInput) {
+            const input = userInput.toLowerCase();
+            let bestMatch = '';
+            let maxMatches = 0;
+
+            for (const [topic, words] of Object.entries(keywords)) {
+                const matches = words.filter(word => input.includes(word)).length;
+                if (matches > maxMatches) {
+                    maxMatches = matches;
+                    bestMatch = topic;
+                }
+            }
+
+            // If no exact match, try broader matching
+            if (!bestMatch) {
+                if (input.includes('job') || input.includes('work') || input.includes('career') || input.includes('employment')) {
+                    return 'unemployment';
+                } else if (input.includes('relationship') || input.includes('family') || input.includes('friend')) {
+                    return 'loneliness';
+                } else if (input.includes('marriage') || input.includes('spouse') || input.includes('husband') || input.includes('wife')) {
+                    return 'divorce';
+                } else if (input.includes('passed') || input.includes('died') || input.includes('funeral') || input.includes('death')) {
+                    return 'grief';
+                } else if (input.includes('money') || input.includes('financial') || input.includes('finance')) {
+                    return 'anxiety';
+                } else if (input.includes('health') || input.includes('sick') || input.includes('illness')) {
+                    return 'fear';
+                } else {
+                    return 'hope'; // Default to hope
+                }
+            }
+
+            return bestMatch;
+        }
+
+        function displayMessage(message, isUser = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            if (isUser) {
+                messageDiv.textContent = message;
+            } else {
+                messageDiv.innerHTML = message;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function getRandomVerse(topic) {
+            const verses = verseDatabase[topic] || verseDatabase['hope'];
+            return verses[Math.floor(Math.random() * verses.length)];
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const sendButton = document.getElementById('sendButton');
+            const loading = document.getElementById('loading');
+            const userMessage = input.value.trim();
+
+            if (!userMessage) return;
+
+            // Clear welcome message if it exists
+            const welcomeMsg = document.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+
+            // Display user message
+            displayMessage(userMessage, true);
+            
+            // Clear input and disable button
+            input.value = '';
+            sendButton.disabled = true;
+            loading.style.display = 'block';
+
+            // Simulate processing time
+            setTimeout(() => {
+                // Find matching topic
+                const topic = findBestMatch(userMessage);
+                const selectedVerse = getRandomVerse(topic);
+
+                // Create bot response
+                const response = `
+                    <div class="verse">
+                        "${selectedVerse.verse}"
+                        <div class="reference">- ${selectedVerse.reference}</div>
+                    </div>
+                    <div class="encouragement">
+                        ${selectedVerse.encouragement}
+                    </div>
+                `;
+
+                loading.style.display = 'none';
+                displayMessage(response);
+                sendButton.disabled = false;
+                input.focus();
+            }, 1500);
+        }
+
+        // Enter key support
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Focus on input when page loads
+        window.onload = function() {
+            document.getElementById('userInput').focus();
+        };
+    </script>
+</body>
+</html>
